@@ -1,5 +1,5 @@
 #include <mbed.h>
-
+#include <vector>
 // Transfer Function B, 2.5% - 22.5% of 2^24
 float output_max = 3774873.6;	// 22.5%
 float output_min = 419430.4;	// 2.5%
@@ -50,41 +50,72 @@ int main() {
 	// Calculated pressure value
 	float pressure = 0.0;
 	float last_pressure = 0.0; // record the last pressure
-	float pressure_diff = 0,0;
+	float pressure_diff = 0.0;
+	float max_pressure_diff = 0.0; // record the max pressure diff, used to determine MAP
+	float MAP = 0.0; // mean arterial pressure
+	float SBP = 0.0; // systolic blood pressure
+	float DBP = 0.0; // diastolic blood pressure
+	std::vector<float> diff_data; // record the pressure diff
+	std::vector<float> data; // record the pressure
+	int counter = 0; // used to calculate release rate
+	float avg_pressure_diff = 0.0; // the average release rate per second
     // Setup the spi for 8 bit data
     // MPR Series SPI sensors are configured for SPI operation in mode 0 
     // with a 100KHz clock rate
     spi.format(8,0);
     spi.frequency(100'000);
 	bool starting_flag = false;
-	vector<float> data; // record the blood pressure change
 	while(1) {
 		// Update the pressure
 		last_pressure = pressure; // update last pressure
 		pressure = getPressure();
 		printf("The current Pressure is %f\n", pressure);
 		thread_sleep_for(1000);
-		if(pressure>=150) {
+		if(pressure>=150 && pressure - last_pressure<0 && !starting_flag) {  // pressure reaches 150, and start to releasing pressure
 			starting_flag = true;
+			printf("experiment starts");
 		}
-		if(pressure<=30 & starting_flag) {
+		if(pressure<=30 && starting_flag) {
 			starting_flag = false;
-			// Analyse data 
-
-
-			printf("Systolic Blood pressure is: ");
-			printf("Diastolic Blood pressure is: ");
+			// Analyze data 
+			float SBP_diff = max_pressure_diff*0.55; // using Om to calculate Os https://patents.google.com/patent/CN102018507A/en
+			float DBP_diff = max_pressure_diff*0.82; // using Om to calculate Od https://patents.google.com/patent/CN102018507A/en
+			for(int i=0;i<diff_data.size();i++) {
+				if(abs(diff_data[i]-SBP_diff)<0.05) {
+					SBP = data[i];
+					break;
+				}
+			}
+			for(int i = diff_data.size()-1;i>=0;i--) {
+				if(abs(diff_data[i]-DBP_diff)<0.05) {
+					DBP = data[i];
+					break;
+				}
+			}
+			//float sbp = 
+			printf("Systolic Blood pressure is: %f\n",SBP);
+			printf("Diastolic Blood pressure is: %f/n",DBP);
 			printf("Heart Rate is: ");
-			data.erase(); // erase all the date for the next experiment
+			data.clear(); // clear data for the next experitment
+			diff_data.clear();
 		}
 		if(starting_flag) { // start the experiment
-			pressure_diff = pressure - pressure;
-			if (pressure_diff>=5) {
-				printf("warnning, the release rate is too fast!");
-			} else if(pressure_diff<=3) {
-				printf("warnning, the release rate is too slow!");
+			pressure_diff = pressure - last_pressure;
+			diff_data.push_back(pressure_diff);
+			data.push_back(pressure);
+			if(pressure_diff>max_pressure_diff) {
+				max_pressure_diff = pressure_diff; // update max pressure diff
+				MAP = pressure; // update MAP
 			}
-			data.push_back(pressure_diff);
+			avg_pressure_diff += pressure_diff;
+			counter ++; // update counter
+			if(counter%10==0) { // test release rate once per second
+				if(avg_pressure_diff/10>=-3) {
+					printf("warnning, the release rate is too slow!");
+				} else if(avg_pressure_diff/10<=-5) {
+					printf("warnning, the release rate is too fast!");
+				}
+			}
 		}
 		// if(pressure < 150) {
 		// 	// wait for 1000ms if the pressure does not meet the threshold
