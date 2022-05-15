@@ -49,19 +49,43 @@ int main() {
     
 	// Calculated pressure value
 	float pressure = 0.0;
-
+	float last_pressure = 0.0; // record the last pressure
+	float pressure_diff = 0,0;
     // Setup the spi for 8 bit data
     // MPR Series SPI sensors are configured for SPI operation in mode 0 
     // with a 100KHz clock rate
     spi.format(8,0);
     spi.frequency(100'000);
-
+	bool starting_flag = false;
+	vector<float> data; // record the blood pressure change
 	while(1) {
 		// Update the pressure
+		last_pressure = pressure; // update last pressure
 		pressure = getPressure();
 		printf("The current Pressure is %f\n", pressure);
 		thread_sleep_for(1000);
+		if(pressure>=150) {
+			starting_flag = true;
+		}
+		if(pressure<=30 & starting_flag) {
+			starting_flag = false;
+			// Analyse data 
 
+
+			printf("Systolic Blood pressure is: ");
+			printf("Diastolic Blood pressure is: ");
+			printf("Heart Rate is: ");
+			data.erase(); // erase all the date for the next experiment
+		}
+		if(starting_flag) { // start the experiment
+			pressure_diff = pressure - pressure;
+			if (pressure_diff>=5) {
+				printf("warnning, the release rate is too fast!");
+			} else if(pressure_diff<=3) {
+				printf("warnning, the release rate is too slow!");
+			}
+			data.push_back(pressure_diff);
+		}
 		// if(pressure < 150) {
 		// 	// wait for 1000ms if the pressure does not meet the threshold
 		// 	thread_sleep_for(1000);
