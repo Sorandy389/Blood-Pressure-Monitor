@@ -70,13 +70,12 @@ int main() {
 		// Update the pressure
 		last_pressure = pressure; // update last pressure
 		pressure = getPressure();
-		printf("The current Pressure is %f\n", pressure);
 		thread_sleep_for(88);
 		if(pressure>=170 && pressure - last_pressure<0 && !starting_flag) {  // pressure reaches 150, and start to releasing pressure
 			starting_flag = true;
-			printf("experiment starts/n");
-		}
-		if(pressure<=30 && starting_flag) {
+			printf("experiment starts and stop increase the pressure./n");
+			thread_sleep_for(2000);
+		} else if(pressure<=30 && starting_flag) {
 			starting_flag = false;
 			// Analyze data 
 			float SBP_diff = max_pressure_diff*0.55; // using Om to calculate Os https://patents.google.com/patent/CN102018507A/en
@@ -107,8 +106,7 @@ int main() {
 			index = 0;
 			// time for observe the result
 			thread_sleep_for(10000);
-		}
-		if(starting_flag) { // start the experiment
+		} else if(starting_flag) { // start the experiment
 			pressure_diff = pressure - last_pressure;
 			diff_data.push_back(pressure_diff);
 			data.push_back(pressure);
@@ -120,7 +118,7 @@ int main() {
 			avg_pressure_diff += pressure_diff;
 			counter ++; // update counter
 			if(counter%10==0) { // test release rate once per second
-				printf("The current Pressure is %f\n", avg_pressure_diff);
+				printf("The current Pressure is %f.\n", avg_pressure_diff);
 
 				if(avg_pressure_diff>=-2) {
 					printf("warnning, the release rate is too slow!\n");
@@ -129,6 +127,8 @@ int main() {
 				}
 				avg_pressure_diff = 0.0;
 			}
+		} else {
+			printf("Below the start pressure! The current pressure is %f.\n", pressure);
 		}
 		// if(pressure < 150) {
 		// 	// wait for 1000ms if the pressure does not meet the threshold
