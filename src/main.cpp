@@ -21,7 +21,7 @@ float getPressure(void) {
 	spi.write(0x00);
 	spi.write(0x00);
 	// wait for at least 5ms
-	thread_sleep_for(10);
+	thread_sleep_for(6);
 	// deselect the sensor
 	cs = 1;
 
@@ -33,7 +33,7 @@ float getPressure(void) {
 	raw_data[2] = spi.write(0x00);
 	raw_data[3] = spi.write(0x00);
 	// wait for at least 5ms
-	thread_sleep_for(10);
+	thread_sleep_for(6);
 	// deselect the sensor
 	cs = 1;
 
@@ -71,8 +71,8 @@ int main() {
 		last_pressure = pressure; // update last pressure
 		pressure = getPressure();
 		printf("The current Pressure is %f\n", pressure);
-		thread_sleep_for(100);
-		if(pressure>=150 && pressure - last_pressure<0 && !starting_flag) {  // pressure reaches 150, and start to releasing pressure
+		thread_sleep_for(88);
+		if(pressure>=170 && pressure - last_pressure<0 && !starting_flag) {  // pressure reaches 150, and start to releasing pressure
 			starting_flag = true;
 			printf("experiment starts/n");
 		}
@@ -82,26 +82,31 @@ int main() {
 			float SBP_diff = max_pressure_diff*0.55; // using Om to calculate Os https://patents.google.com/patent/CN102018507A/en
 			float DBP_diff = max_pressure_diff*0.82; // using Om to calculate Od https://patents.google.com/patent/CN102018507A/en
 			for(int i=index;i>=0;i--) {
-				if(diff_data[i]<SBP_diff) {
+				if((diff_data[i] > 0) && (diff_data[i]<SBP_diff)) {
 					SBP = data[i];
+					printf("SBP: %d\n",i);
 					break;
 				}
 			}
 			for(int i = index;i<diff_data.size()-1;i++) {
-				if(diff_data[i]<DBP_diff) {
+				if((diff_data[i] > 0) && (diff_data[i]<DBP_diff)) {
 					DBP = data[i];
+					printf("DBP: %d\n",i);
 					break;
 				}
 			}
+			printf("MAP: %d\n",index);
 			//float sbp = 
 			printf("Mean arterial pressure is: %f\n",MAP);
 			printf("Systolic Blood pressure is: %f\n",SBP);
 			printf("Diastolic Blood pressure is: %f\n",DBP);
-			printf("Heart Rate is: ");
+			printf("Heart Rate is: \n");
 			data.clear(); // clear data for the next experitment
 			diff_data.clear();
 			counter = 0;
 			index = 0;
+			// time for observe the result
+			thread_sleep_for(10000);
 		}
 		if(starting_flag) { // start the experiment
 			pressure_diff = pressure - last_pressure;
@@ -115,11 +120,14 @@ int main() {
 			avg_pressure_diff += pressure_diff;
 			counter ++; // update counter
 			if(counter%10==0) { // test release rate once per second
-				if(avg_pressure_diff/10>=-3) {
-					printf("warnning, the release rate is too slow!/n");
-				} else if(avg_pressure_diff/10<=-5) {
-					printf("warnning, the release rate is too fast!/n");
+				printf("The current Pressure is %f\n", avg_pressure_diff);
+
+				if(avg_pressure_diff>=-2) {
+					printf("warnning, the release rate is too slow!\n");
+				} else if(avg_pressure_diff<=-6) {
+					printf("warnning, the release rate is too fast!\n");
 				}
+				avg_pressure_diff = 0.0;
 			}
 		}
 		// if(pressure < 150) {
