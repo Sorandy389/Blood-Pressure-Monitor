@@ -58,6 +58,7 @@ int main() {
 	std::vector<float> diff_data; // record the pressure diff
 	std::vector<float> data; // record the pressure
 	int counter = 0; // used to calculate release rate
+	int index = 0; // index of MAP
 	float avg_pressure_diff = 0.0; // the average release rate per second
     // Setup the spi for 8 bit data
     // MPR Series SPI sensors are configured for SPI operation in mode 0 
@@ -70,8 +71,8 @@ int main() {
 		last_pressure = pressure; // update last pressure
 		pressure = getPressure();
 		printf("The current Pressure is %f\n", pressure);
-		thread_sleep_for(1000);
-		if(pressure>=80 && pressure - last_pressure<0 && !starting_flag) {  // pressure reaches 150, and start to releasing pressure
+		thread_sleep_for(100);
+		if(pressure>=150 && pressure - last_pressure<0 && !starting_flag) {  // pressure reaches 150, and start to releasing pressure
 			starting_flag = true;
 			printf("experiment starts/n");
 		}
@@ -80,14 +81,14 @@ int main() {
 			// Analyze data 
 			float SBP_diff = max_pressure_diff*0.55; // using Om to calculate Os https://patents.google.com/patent/CN102018507A/en
 			float DBP_diff = max_pressure_diff*0.82; // using Om to calculate Od https://patents.google.com/patent/CN102018507A/en
-			for(int i=0;i<diff_data.size();i++) {
-				if(abs(diff_data[i]-SBP_diff)<0.05) {
+			for(int i=index;i>=0;i--) {
+				if(diff_data[i]<SBP_diff) {
 					SBP = data[i];
 					break;
 				}
 			}
-			for(int i = diff_data.size()-1;i>=0;i--) {
-				if(abs(diff_data[i]-DBP_diff)<0.05) {
+			for(int i = index;i<diff_data.size()-1;i++) {
+				if(diff_data[i]<DBP_diff) {
 					DBP = data[i];
 					break;
 				}
@@ -99,6 +100,8 @@ int main() {
 			printf("Heart Rate is: ");
 			data.clear(); // clear data for the next experitment
 			diff_data.clear();
+			counter = 0;
+			index = 0;
 		}
 		if(starting_flag) { // start the experiment
 			pressure_diff = pressure - last_pressure;
@@ -107,6 +110,7 @@ int main() {
 			if(pressure_diff>max_pressure_diff) {
 				max_pressure_diff = pressure_diff; // update max pressure diff
 				MAP = pressure; // update MAP
+				index = counter;
 			}
 			avg_pressure_diff += pressure_diff;
 			counter ++; // update counter
