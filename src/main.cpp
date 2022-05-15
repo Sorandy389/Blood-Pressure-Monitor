@@ -55,6 +55,7 @@ int main() {
 	float MAP = 0.0; // mean arterial pressure
 	float SBP = 0.0; // systolic blood pressure
 	float DBP = 0.0; // diastolic blood pressure
+	int heart_rate = 0; // heart rate
 	std::vector<float> diff_data; // record the pressure diff
 	std::vector<float> data; // record the pressure
 	int counter = 0; // used to calculate release rate
@@ -83,23 +84,27 @@ int main() {
 			for(int i=index;i>=0;i--) {
 				if((diff_data[i] > 0) && (diff_data[i]<SBP_diff)) {
 					SBP = data[i];
-					printf("SBP: %d\n",i);
 					break;
 				}
 			}
 			for(int i = index;i<diff_data.size()-1;i++) {
 				if((diff_data[i] > 0) && (diff_data[i]<DBP_diff)) {
 					DBP = data[i];
-					printf("DBP: %d\n",i);
 					break;
 				}
 			}
-			printf("MAP: %d\n",index);
+			// heart rate
+			for(int i = index+1;i<diff_data.size()-1;i++) {
+				if(diff_data[i] > 0) {
+					heart_rate = (int) 60/((i-index)*0.1);
+					break;
+				}
+			}
 			//float sbp = 
-			printf("Mean arterial pressure is: %f\n",MAP);
-			printf("Systolic Blood pressure is: %f\n",SBP);
-			printf("Diastolic Blood pressure is: %f\n",DBP);
-			printf("Heart Rate is: \n");
+			printf("Mean arterial pressure is: %f.\n",MAP);
+			printf("Systolic Blood pressure is: %f.\n",SBP);
+			printf("Diastolic Blood pressure is: %f.\n",DBP);
+			printf("Heart Rate is: %d.\n", heart_rate);
 			data.clear(); // clear data for the next experitment
 			diff_data.clear();
 			counter = 0;
