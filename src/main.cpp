@@ -71,9 +71,9 @@ int main() {
 		pressure = getPressure();
 		printf("The current Pressure is %f\n", pressure);
 		thread_sleep_for(1000);
-		if(pressure>=150 && pressure - last_pressure<0 && !starting_flag) {  // pressure reaches 150, and start to releasing pressure
+		if(pressure>=80 && pressure - last_pressure<0 && !starting_flag) {  // pressure reaches 150, and start to releasing pressure
 			starting_flag = true;
-			printf("experiment starts");
+			printf("experiment starts/n");
 		}
 		if(pressure<=30 && starting_flag) {
 			starting_flag = false;
@@ -93,8 +93,9 @@ int main() {
 				}
 			}
 			//float sbp = 
+			printf("Mean arterial pressure is: %f\n",MAP);
 			printf("Systolic Blood pressure is: %f\n",SBP);
-			printf("Diastolic Blood pressure is: %f/n",DBP);
+			printf("Diastolic Blood pressure is: %f\n",DBP);
 			printf("Heart Rate is: ");
 			data.clear(); // clear data for the next experitment
 			diff_data.clear();
@@ -111,9 +112,9 @@ int main() {
 			counter ++; // update counter
 			if(counter%10==0) { // test release rate once per second
 				if(avg_pressure_diff/10>=-3) {
-					printf("warnning, the release rate is too slow!");
+					printf("warnning, the release rate is too slow!/n");
 				} else if(avg_pressure_diff/10<=-5) {
-					printf("warnning, the release rate is too fast!");
+					printf("warnning, the release rate is too fast!/n");
 				}
 			}
 		}
