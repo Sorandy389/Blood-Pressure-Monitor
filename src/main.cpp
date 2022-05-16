@@ -81,25 +81,47 @@ int main() {
 			// Analyze data 
 			float SBP_diff = max_pressure_diff*0.55; // using Om to calculate Os https://patents.google.com/patent/CN102018507A/en
 			float DBP_diff = max_pressure_diff*0.82; // using Om to calculate Od https://patents.google.com/patent/CN102018507A/en
-			for(int i=index;i>=0;i--) {  // staring from MAP, find the index of Os and get the corresponded pressure data
-				if((diff_data[i] > 0) && (diff_data[i]<SBP_diff)) {  // find the index of Os
-					SBP = data[i];  // get the corresponded pressure
-					break;
+
+			float error_gap = 1000.0;
+			for(int i=index-1;i>=0;i--) { // staring from MAP, find the index of Os and get the corresponded pressure data
+				if(diff_data[i] > 0) { // find the closest index of Os
+					float diff = data[i] - SBP_diff;
+					if (diff < 0) {
+						diff = -diff;
+					}
+					if (diff < error_gap) {
+						SBP = data[i]; // get the corresponded pressure
+						error_gap = diff;
+					}
 				}
 			}
-			for(int i = index;i<diff_data.size()-1;i++) {  // same as SBP, find and Od and DBP
-				if((diff_data[i] > 0) && (diff_data[i]<DBP_diff)) {
-					DBP = data[i];
-					break;
+			error_gap = 1000.0;
+			for(int i=index+1;i<diff_data.size()-1;i++) { // staring from MAP, find the index of Od and get the corresponded pressure data
+				if(diff_data[i] > 0) { // find the closest index of Od
+					float diff = data[i] - DBP_diff;
+					if (diff < 0) {
+						diff = -diff;
+					}
+					if (diff < error_gap) {
+						DBP = data[i]; // get the corresponded pressure
+						error_gap = diff;
+					}
 				}
 			}
 			// heart rate
-			for(int i = index+1;i<diff_data.size()-1;i++) {
-				if(diff_data[i] > 0) {
-					heart_rate = (int) 60/((i-index)*0.1);
-					break;
+			int heart_count = 0;
+			int heart_index = 0;
+			for(int i = index+2;i<diff_data.size()-1;i++) {
+				if(diff_data[i] > max_pressure_diff*0.2) { // find the heart beats
+					heart_count++;
+					heart_index = i;
+					if(heart_count>=10) {
+						break;
+					}
 				}
 			}
+			// calculate the heart rate (beats/min)
+			heart_rate = (int) heart_count*60/((heart_index-index)*0.1);
 			// print result
 			printf("Mean arterial pressure is: %f.\n",MAP);
 			printf("Systolic Blood pressure is: %f.\n",SBP);
@@ -120,10 +142,16 @@ int main() {
 			}
 			data.clear(); // clear data for the next experitment
 			diff_data.clear();
+			max_pressure_diff = 0.0;
+			MAP = 0.0;
+			SBP = 0.0;
+			DBP = 0.0;
+			heart_rate = 0;
 			counter = 0;
 			index = 0;
+			avg_pressure_diff = 0.0;
 			// time for observe the result
-			thread_sleep_for(10000);
+			thread_sleep_for(30000);
 		} else if(starting_flag) { // start the experiment
 			pressure_diff = pressure - last_pressure; // record the pressure difference between current and last
 			diff_data.push_back(pressure_diff); // record the difference
