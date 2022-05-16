@@ -71,7 +71,7 @@ int main() {
 		// Update the pressure
 		last_pressure = pressure; // update last pressure
 		pressure = getPressure();
-		thread_sleep_for(88);
+		thread_sleep_for(80);
 		if(pressure>=170 && pressure - last_pressure<0 && !starting_flag) {  // pressure reaches 150, and start to releasing pressure
 			starting_flag = true;  // start the experiment
 			printf("experiment starts and stop increase the pressure./n");
